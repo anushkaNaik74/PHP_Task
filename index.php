@@ -8,7 +8,7 @@
     <title>Catering Items</title>
   </head>
   <body>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <label>Name</label>
         <input type="text" name="name" placeholder="Enter Item Name" >
         <br><br>
@@ -18,7 +18,7 @@
         <br><br>
 
         <label>Image</label>
-        <input type="text" name="imageUrl" placeholder="Enter Item Image URL" >
+        <input type="file" name="imageUrl" placeholder="Upload Image" >
         <br><br>
 
         <label>Parent</label>
@@ -74,21 +74,50 @@
 </html>
 
 <?php
+
+// Variables to store form data
+$name = $desc = $imageUrl = $itemParent = $status = '';
+
 if(isset($_POST['submit'])){
   $name = $_POST['name'];
   $desc = $_POST['desc'];
-  $imageUrl = $_POST['imageUrl'];
+  // $imageUrl = $_POST['imageUrl'];
   $itemParent = $_POST['itemParent'];
   $status = $_POST['status'];
 
-  $qry = "insert into pr_catering_items values(null, '$name', '$desc', '$imageUrl', '$itemParent', '$status')";
+  // File upload handling
+  $uploadDir = 'uploads/'; // Specify the directory to store uploaded files
 
-  if(mysqli_query($db, $qry)){
-    echo'<script>alert("User Registered Successfully");</script>';
-    header('location: index.php');
-  }else{
-    echo mysqli_error($db);
+   // Check if the directory exists, create it if not
+   if (!file_exists($uploadDir)) {
+    mkdir($uploadDir, 0777, true);
   }
+  $uploadedFile = $uploadDir . basename($_FILES['imageUrl']['name']);
+
+  if (move_uploaded_file($_FILES['imageUrl']['tmp_name'], $uploadedFile)) {
+
+    // File upload successful, now you can insert data into the database
+    $imageUrl = $_FILES['imageUrl']['name'];
+
+     // Read the contents of the image file
+     $imageData = file_get_contents($uploadedFile);
+     $imageData = mysqli_real_escape_string($db, $imageData);
+
+    // Insert data into the database
+    $sql = "INSERT INTO pr_catering_items (pr_c_name, pr_c_desc, pr_c_image, pr_c_parent, pr_c_status) VALUES ('$name', '$desc', '$imageUrl', '$itemParent', '$status')";
+    // Execute the SQL query
+    // Note: You should use prepared statements to prevent SQL injection
+
+    if (mysqli_query($db, $sql)) {
+      echo'<script>alert("User Registered Successfully");</script>';
+      header('location: index.php');
+    } else {
+        echo "Error: " . $sql . "<br>" . mysqli_error($db);
+    }
+} else {
+    // File upload failed
+    echo "Error uploading file";
+}
 
 
 }
